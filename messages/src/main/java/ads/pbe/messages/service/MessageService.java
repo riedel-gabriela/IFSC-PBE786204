@@ -1,6 +1,7 @@
 package ads.pbe.messages.service;
 
 import java.time.Instant;
+import java.util.ArrayList;
 
 import org.springframework.stereotype.Service;
 
@@ -23,12 +24,13 @@ public class MessageService {
         return new MessageDTO(saved.getKey(), saved.getText());
     }
 
-    public MessageDTO getNextMessage(String key) {
+    public String getMessage(String key) {
         while (true) {
-            Message message = messageRepository.peekByKey(key);
-            if (message == null) {
+            ArrayList<Message> messages = messageRepository.peekByKey(key);
+            if (messages == null) {
                 return null;
             }
+            Message message = messages.getFirst();
 
             if (message.getExpiresAt() != null && Instant.now().isAfter(message.getExpiresAt())) {
                 messageRepository.pollByKey(key);
@@ -41,7 +43,7 @@ public class MessageService {
                 messageRepository.pollByKey(key);
             }
 
-            return new MessageDTO(message.getKey(), message.getText());
+            return messages.toString();
         }
     }
 }

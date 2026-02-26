@@ -26,7 +26,7 @@ public class MessageController {
 
     @GetMapping("/mensageiro/acessa/{key}")
     public ResponseEntity<String> getMethodName(@PathVariable String key) {
-        MessageDTO dto = messageService.getNextMessage(key);
-        return dto != null ? ResponseEntity.ok(dto.message()) : ResponseEntity.notFound().build();
+        String dto = messageService.getMessage(key);
+        return dto != null ? ResponseEntity.ok(dto) : ResponseEntity.notFound().build();
     }
 }
