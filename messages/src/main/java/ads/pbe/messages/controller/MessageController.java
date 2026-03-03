@@ -1,32 +1,26 @@
 package ads.pbe.messages.controller;
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
-
-import ads.pbe.messages.dto.MessageDTO;
-import ads.pbe.messages.dto.PublishRequest;
-import ads.pbe.messages.service.MessageService;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-public class MessageController {
+@RequestMapping("/mensageiro")
+public class MensageiroController {
 
     @Autowired
-    private MessageService messageService;
+    private MessageService service;
 
-    @PostMapping("/mensageiro/publica/{key}")
-    public ResponseEntity<String> postMethodName(@PathVariable String key, @RequestBody PublishRequest request) {
-        MessageDTO saved = messageService.saveMessage(key, request);
-        return ResponseEntity.ok().body(saved.toString());
+    @PostMapping("/publica/{key}")
+    public ResponseEntity<Void> publicar(@PathVariable String key, @RequestBody String content) {
+        service.saveMessage(key, content);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    @GetMapping("/mensageiro/acessa/{key}")
-    public ResponseEntity<String> getMethodName(@PathVariable String key) {
-        String dto = messageService.getMessage(key);
-        return dto != null ? ResponseEntity.ok(dto) : ResponseEntity.notFound().build();
+    @GetMapping("/acessa/{key}")
+    public ResponseEntity<String> acessar(@PathVariable String key) {
+        return service.accessNextMessage(key)
+                .map(content -> ResponseEntity.ok(content))
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 }

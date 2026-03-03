@@ -1,49 +1,51 @@
 package ads.pbe.messages.service;
-
-import java.time.Instant;
-import java.util.ArrayList;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import ads.pbe.messages.dto.MessageDTO;
-import ads.pbe.messages.dto.PublishRequest;
-import ads.pbe.messages.model.Message;
-import ads.pbe.messages.repository.MessageRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
+import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 public class MessageService {
 
-    private final MessageRepository messageRepository;
+    @Autowired
+    private MessageRepository repository;
 
-    public MessageDTO saveMessage(String key, PublishRequest request) {
-        Instant expiresAt = request.ttl() != null ? Instant.now().plusSeconds(request.ttl()) : null;
-        Message message = new Message(key, request.message(), expiresAt, request.maxAccesses(), 0);
-        Message saved = messageRepository.save(message);
-        return new MessageDTO(saved.getKey(), saved.getText());
+    @Transactional
+    public void saveMessage(String key, MessageRequest request) {
+        Message msg = new Message();
+        msg.setkey(key);
+        msg.setContent(request.content());
+        msg.setLimitAccess(request.limit_access())
+
+         if (request.ttl() != null) {
+            msg.setExpireAt(LocalDateTime.now().plusSeconds(request.ttl()));
+        }
+
+        repository.save(msg);
     }
 
-    public String getMessage(String key) {
-        while (true) {
-            ArrayList<Message> messages = messageRepository.peekByKey(key);
-            if (messages == null) {
-                return null;
-            }
-            Message message = messages.getFirst();
+    @Transactional
+    public Optional<String> accessNextMessage(String key) {
+        List<Message> msgs = repository.findByKeyOrderByCreatedAtAsc(key);
 
-            if (message.getExpiresAt() != null && Instant.now().isAfter(message.getExpiresAt())) {
-                messageRepository.pollByKey(key);
+        for (Message msg : msgs) {
+            if (msg.getExpireAt() != null && msg.getExpireAt().isBefore(LocalDateTime.now())) {
+                repository.delete(msg);
                 continue;
             }
 
-            message.setAccessCount(message.getAccessCount() + 1);
+            msg.setAccessed();
+            String content = msg.getContent();
 
-            if (message.getMaxAccesses() == null || message.getAccessCount() >= message.getMaxAccesses()) {
-                messageRepository.pollByKey(key);
+            if (msg.getLimitAccess() != null && msg.getAccessed() >= msg.getLimitAccess()) {
+                repository.delete(msg);
+            } else {
+                repository.save(msg);
             }
 
-            return messages.toString();
+            return Optional.of(conteudo);
         }
+        return Optional.empty();
     }
 }

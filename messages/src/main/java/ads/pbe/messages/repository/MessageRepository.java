@@ -1,13 +1,9 @@
 package ads.pbe.messages.repository;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.List;
 
-import ads.pbe.messages.model.Message;
-
-import java.util.ArrayList;
-
-public interface MessageRepository {
-    Message save(Message message);
-
-    ArrayList<Message> peekByKey(String key);
-
-    Message pollByKey(String key);
+@Repository
+public interface MessageRepository extends JpaRepository<Message, Long> {
+    List<Message> findByKeyOrderByCretedAtAsc(String key);
 }
