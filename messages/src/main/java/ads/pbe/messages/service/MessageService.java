@@ -18,11 +18,18 @@ public class MessageService {
         msg.setContent(request.content());
         msg.setLimitAccess(request.limit_access())
 
-         if (request.ttl() != null) {
+        if (request.ttl() != null) {
             msg.setExpireAt(LocalDateTime.now().plusSeconds(request.ttl()));
         }
 
         repository.save(msg);
+    }
+
+    @Transactional
+    public List<String> recentMessages(String key, int number_of_messages) {
+        List<Messsage> msgs = repository.findByKeyOrderByCretedAtAsc(key);
+        List<String> txts = msgs.stream().limit(number_of_messages).map(m -> m.getContent()).toList();
+        return txts;
     }
 
     @Transactional
